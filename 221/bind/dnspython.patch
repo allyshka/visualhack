@@ -1,0 +1,145 @@
+diff -ruN dns_original/message.py dns/message.py
+--- dns_original/message.py	2017-07-25 10:41:15.490051000 +0300
++++ dns/message.py	2017-07-25 10:49:38.621560600 +0300
+@@ -433,7 +433,8 @@
+             r.add_tsig(self.keyname, self.keyring[self.keyname],
+                        self.fudge, self.original_id, self.tsig_error,
+                        self.other_data, self.request_mac,
+-                       self.keyalgorithm)
++                       self.keyalgorithm, time_func=self.time_func if hasattr(self, 'time_func') else None,
++                       request_hmac=self.request_hmac if hasattr(self, 'request_hmac') else '')
+             self.mac = r.mac
+         return r.get_wire()
+ 
+diff -ruN dns_original/query.py dns/query.py
+--- dns_original/query.py	2017-07-25 10:41:15.493553000 +0300
++++ dns/query.py	2017-07-25 10:52:24.235994900 +0300
+@@ -194,7 +194,7 @@
+ 
+ 
+ def udp(q, where, timeout=None, port=53, af=None, source=None, source_port=0,
+-        ignore_unexpected=False, one_rr_per_rrset=False):
++        ignore_unexpected=False, one_rr_per_rrset=False, origin=None):
+     """Return the response obtained after sending a query via UDP.
+ 
+     @param q: the query
+@@ -223,7 +223,7 @@
+     @type one_rr_per_rrset: bool
+     """
+ 
+-    wire = q.to_wire()
++    wire = q.to_wire(origin=origin)
+     (af, destination, source) = _destination_and_source(af, where, port,
+                                                         source, source_port)
+     s = socket_factory(af, socket.SOCK_DGRAM, 0)
+@@ -305,7 +305,7 @@
+ 
+ 
+ def tcp(q, where, timeout=None, port=53, af=None, source=None, source_port=0,
+-        one_rr_per_rrset=False):
++        one_rr_per_rrset=False, origin=None):
+     """Return the response obtained after sending a query via TCP.
+ 
+     @param q: the query
+@@ -331,7 +331,7 @@
+     @type one_rr_per_rrset: bool
+     """
+ 
+-    wire = q.to_wire()
++    wire = q.to_wire(origin=origin)
+     (af, destination, source) = _destination_and_source(af, where, port,
+                                                         source, source_port)
+     s = socket_factory(af, socket.SOCK_STREAM, 0)
+diff -ruN dns_original/renderer.py dns/renderer.py
+--- dns_original/renderer.py	2017-07-25 10:41:15.498058000 +0300
++++ dns/renderer.py	2017-07-25 12:09:32.601524300 +0300
+@@ -254,7 +254,7 @@
+         self.counts[ADDITIONAL] += 1
+ 
+     def add_tsig(self, keyname, secret, fudge, id, tsig_error, other_data,
+-                 request_mac, algorithm=dns.tsig.default_algorithm):
++                 request_mac, algorithm=dns.tsig.default_algorithm, time_func=None, request_hmac=''):
+         """Add a TSIG signature to the message.
+ 
+         @param keyname: the TSIG key name
+@@ -282,13 +282,15 @@
+         (tsig_rdata, self.mac, ctx) = dns.tsig.sign(s,
+                                                     keyname,
+                                                     secret,
+-                                                    int(time.time()),
++                                                    int(time_func() if time_func else time.time()),
+                                                     fudge,
+                                                     id,
+                                                     tsig_error,
+                                                     other_data,
+                                                     request_mac,
+-                                                    algorithm=algorithm)
++                                                    algorithm=algorithm,
++                                                    hmac_value=request_hmac
++                                                    )
+         keyname.to_wire(self.output, self.compress, self.origin)
+         self.output.write(struct.pack('!HHIH', dns.rdatatype.TSIG,
+                                       dns.rdataclass.ANY, 0, 0))
+diff -ruN dns_original/tsig.py dns/tsig.py
+--- dns_original/tsig.py	2017-07-25 10:41:15.503060000 +0300
++++ dns/tsig.py	2017-07-25 11:58:59.853709800 +0300
+@@ -86,7 +86,7 @@
+ 
+ def sign(wire, keyname, secret, time, fudge, original_id, error,
+          other_data, request_mac, ctx=None, multi=False, first=True,
+-         algorithm=default_algorithm):
++         algorithm=default_algorithm, hmac_value=''):
+     """Return a (tsig_rdata, mac, ctx) tuple containing the HMAC TSIG rdata
+     for the input parameters, the HMAC MAC calculated by applying the
+     TSIG signature algorithm, and the TSIG digest context.
+@@ -125,7 +125,7 @@
+         ctx.update(post_mac)
+     else:
+         ctx.update(time_mac)
+-    mac = ctx.digest()
++    mac = ctx.digest() if not hmac_value else hmac_value
+     mpack = struct.pack('!H', len(mac))
+     tsig_rdata = pre_mac + mpack + mac + id + post_mac
+     if multi:
+@@ -176,26 +176,26 @@
+     current += other_size
+     if current != tsig_rdata + tsig_rdlen:
+         raise dns.exception.FormError
+-    if error != 0:
+-        if error == BADSIG:
+-            raise PeerBadSignature
+-        elif error == BADKEY:
+-            raise PeerBadKey
+-        elif error == BADTIME:
+-            raise PeerBadTime
+-        elif error == BADTRUNC:
+-            raise PeerBadTruncation
+-        else:
+-            raise PeerError('unknown TSIG error code %d' % error)
++    # if error != 0:
++    #     if error == BADSIG:
++    #         raise PeerBadSignature
++    #     elif error == BADKEY:
++    #         raise PeerBadKey
++    #     elif error == BADTIME:
++    #         raise PeerBadTime
++    #     elif error == BADTRUNC:
++    #         raise PeerBadTruncation
++    #     else:
++    #         raise PeerError('unknown TSIG error code %d' % error)
+     time_low = time - fudge
+     time_high = time + fudge
+-    if now < time_low or now > time_high:
+-        raise BadTime
++    # if now < time_low or now > time_high:
++    #     raise BadTime
+     (junk, our_mac, ctx) = sign(new_wire, keyname, secret, time, fudge,
+                                 original_id, error, other_data,
+                                 request_mac, ctx, multi, first, aname)
+-    if our_mac != mac:
+-        raise BadSignature
++    # if our_mac != mac:
++    #     raise BadSignature
+     return ctx
+ 
+ 

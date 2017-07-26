@@ -1,0 +1,11 @@
+key "guess_tsig_key" {
+    algorithm hmac-sha256;
+    secret "dmVyeXNlY3JldG1lZ2FrZXk=";
+};
+
+zone "bind.visualhack" {
+    type master;
+    file "/etc/bind/zones/bind.visualhack.db";
+    allow-transfer {key guess_tsig_key;};
+    allow-update {key guess_tsig_key;};
+};
