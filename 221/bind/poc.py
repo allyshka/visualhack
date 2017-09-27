@@ -6,11 +6,11 @@ The issue was tested and proven to affect the following BIND version:
 - BIND 9.11.1
 According to ISC, the following versions are affected:
 - 9.4.0 to 9.8.8
-- 9.9.0 to 9.9.10 P1
-- 9.10.0 to 9.10.5 P1
-- 9.11.0 to 9.11.1 P1
-- 9.9.3 S1 to 9.9.10 S2
-- 9.10.5 S1 to 9.10.5 S2
+- 9.9.0 to 9.9.10­P1
+- 9.10.0 to 9.10.5­P1
+- 9.11.0 to 9.11.1­P1
+- 9.9.3­S1 to 9.9.10­S2
+- 9.10.5­S1 to 9.10.5­S2
 
 Details: http://www.synacktiv.ninja/ressources/CVE-2017-3143_BIND9_TSIG_dynamic_updates_vulnerability_Synacktiv.pdf
 '''
