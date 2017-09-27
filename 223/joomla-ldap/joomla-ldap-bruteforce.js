@@ -7,6 +7,9 @@ var currentLogin = "";
 var asterisk = "*";
 var err = "Unable to find user.";
 var suc = "Username and password do not match or you do not have an account yet.";
+// Step 1: brute username
+var username = "";
+var password = "";
 
 // First, checks if it isn't implemented yet.
 if (!String.prototype.format) {
@@ -80,9 +83,4 @@ function brutePassword(passwd, index) {
 	});
 }
 
-// Step 1: brute username
-var password = "";
-var username = bruteLogin("");
-
-// Step 2: brute password
-// var password = brutePassword("");
+bruteLogin("");
